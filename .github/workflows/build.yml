@@ -1,0 +1,103 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  ios-simulator:
+    name: iOS Simulator Build
+    runs-on: macos-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      # gradle.properties 里的 org.gradle.java.home 指向本机 Windows 的 JBR 路径，
+      # CI 上不存在该路径，先移除再用 setup-java 提供的 JDK
+      - name: Remove local-only Gradle Java home
+        run: sed -i '' -e '/^org\.gradle\.java\.home=/d' gradle.properties
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
+
+      - name: Link ComposeApp framework for iOS
+        # --configure-on-demand 只配置目标模块，避免把 :data/:app 等 Android 模块拉进配置阶段。
+        # :composeApp 静态 framework 内含共享 UI + :shared + :domain 的 Kotlin 代码，
+        # Swift 壳只需链接 ComposeApp.framework。
+        run: ./gradlew :composeApp:linkDebugFrameworkIosSimulatorArm64 --configure-on-demand --stacktrace
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate --spec iosApp/project.yml
+
+      - name: Build iOS app for simulator
+        run: |
+          xcodebuild \
+            -project iosApp/EdgeCOS.xcodeproj \
+            -scheme EdgeCOS \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath iosApp/build \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Package simulator app
+        run: |
+          cd iosApp/build/Build/Products/Debug-iphonesimulator
+          ditto -c -k --sequesterRsrc --keepParent EdgeCOS.app EdgeCOS-simulator.zip
+
+      # 启动模拟器、安装并运行 App，截图后上传，便于在 CI 上直接查看首屏
+      - name: Launch app in simulator and capture screenshot
+        shell: bash
+        timeout-minutes: 15
+        run: |
+          set -euo pipefail
+
+          # 动态取第一台可用的 iPhone 模拟器 UDID（不硬编码机型）
+          IPHONE_LINE="$(xcrun simctl list devices available | grep -E '^[[:space:]]+iPhone' | head -n 1 || true)"
+          UDID="$(printf '%s\n' "$IPHONE_LINE" | sed -E 's/^.*\(([0-9A-Fa-f-]{36})\).*$/\1/')"
+
+          if [ -z "$IPHONE_LINE" ] || [ -z "$UDID" ] || [ "$UDID" = "$IPHONE_LINE" ]; then
+            echo "::error::No available iPhone simulator found on this runner"
+            xcrun simctl list devices available
+            exit 1
+          fi
+          echo "Using simulator: $IPHONE_LINE"
+          echo "Using UDID: $UDID"
+
+          # 已启动时 boot 会返回非 0，这里忽略，交给 bootstatus -b 兜底
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+
+          xcrun simctl install "$UDID" iosApp/build/Build/Products/Debug-iphonesimulator/EdgeCOS.app
+          xcrun simctl launch "$UDID" com.edgecos.mobileapp
+
+          sleep 10
+          mkdir -p iosApp/screenshots
+          xcrun simctl io "$UDID" screenshot iosApp/screenshots/launch.png
+
+      - name: Upload simulator screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: EdgeCOS-screenshot
+          path: iosApp/screenshots/launch.png
+          if-no-files-found: error
+
+      - name: Upload simulator app
+        uses: actions/upload-artifact@v4
+        with:
+          name: EdgeCOS-simulator
+          path: iosApp/build/Build/Products/Debug-iphonesimulator/EdgeCOS-simulator.zip
+          if-no-files-found: error

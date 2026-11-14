@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- 应用外部缓存（下载/上传临时文件） -->
+    <external-cache-path name="external_cache" path="." />
+    <cache-path name="internal_cache" path="." />
+    <!-- 外部存储的 Files 目录 -->
+    <external-files-path name="external_files" path="." />
+    <files-path name="internal_files" path="." />
+    <!-- 临时共享目录 -->
+    <external-path name="external_storage" path="." />
+</paths>

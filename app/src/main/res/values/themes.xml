@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.EdgeCOS" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!-- 启动页主题：冷启动时窗口背景显示 logo，App 加载后切换到 MainActivity 内容 -->
+    <style name="Theme.EdgeCOS.Splash" parent="Theme.EdgeCOS">
+        <item name="android:windowBackground">@drawable/splash_background</item>
+    </style>
+</resources>

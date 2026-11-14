@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 应用图标前景：复用新 logo 位图，系统自适应蒙版裁圆角 -->
+<bitmap xmlns:android="http://schemas.android.com/apk/res/android"
+    android:src="@drawable/img_splash_logo"
+    android:gravity="fill" />

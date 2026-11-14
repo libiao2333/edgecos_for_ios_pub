@@ -1,0 +1,45 @@
+*.iml
+.gradle
+/kotlin
+/.kotlin
+/local.properties
+.idea/
+.DS_Store
+build/
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+*.apk
+*.aab
+
+# iOS：XcodeGen 生成的工程与构建产物不入库
+iosApp/*.xcodeproj/
+iosApp/build/
+*.xcworkspace/xcuserdata/
+
+# 敏感信息：签名密钥与密码、运行时调试日志，禁止入库
+*.jks
+*.keystore
+keystore.properties
+debug_error/
+app/release/
+
+# JVM 崩溃日志
+hs_err_pid*.log
+replay_pid*.log
+
+# 本地构建日志与调试截图（禁止入库）
+build_*.log
+compose_run.log
+probe1.png
+preview_*.png
+
+# 临时扫描脚本
+_scan_*.ps1
+
+# 本地开发引导文档（仅本地使用，不入库）
+Android客户端开发TODO.md
+协议获取与排版TODO.md
+素材复用指导.md
+

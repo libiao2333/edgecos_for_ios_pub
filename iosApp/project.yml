@@ -1,0 +1,64 @@
+name: EdgeCOS
+options:
+  bundleIdPrefix: com.edgecos
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    # 仅模拟器关闭签名（CI 无证书）；真机必须签名，走自动签名（CODE_SIGN_STYLE）
+    "CODE_SIGNING_ALLOWED[sdk=iphonesimulator*]": "NO"
+    "CODE_SIGNING_REQUIRED[sdk=iphonesimulator*]": "NO"
+    "CODE_SIGN_IDENTITY[sdk=iphonesimulator*]": ""
+    # Gradle 的 Kotlin/Native framework 只产出 iosSimulatorArm64 切片，
+    # 而 generic/platform=iOS Simulator 默认同时构建 x86_64 + arm64，
+    # 导致 x86_64 链接时找不到 arm64-only 的 DomainKit/SharedKit。
+    # 这里排除 x86_64，只保留 arm64，与 Gradle 产物一致。
+    "EXCLUDED_ARCHS[sdk=iphonesimulator*]": "x86_64"
+
+targets:
+  EdgeCOS:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources
+        excludes:
+          - Info.plist
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.edgecos.mobileapp
+        PRODUCT_NAME: EdgeCOS
+        INFOPLIST_FILE: Sources/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # 版本号由 Info.plist 引用这两个变量，CI 通过命令行覆盖
+        MARKETING_VERSION: "1.1.4"
+        CURRENT_PROJECT_VERSION: "1"
+        # 真机自动签名：生成工程时通过环境变量 DEVELOPMENT_TEAM 传入 Team ID，
+        # 例如 `DEVELOPMENT_TEAM=ABCDE12345 xcodegen generate --spec iosApp/project.yml`
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
+        # ComposeApp 由 :composeApp 的 link 任务产出，按 SDK 选择切片：
+        # 模拟器 → linkDebugFrameworkIosSimulatorArm64
+        # 真机   → linkDebugFrameworkIosArm64
+        # 共享的 SharedKit / DomainKit 代码会被链接进这个静态 framework，
+        # Swift 侧无需再单独链接它们，避免同一份 Kotlin 代码被打包两次。
+        "FRAMEWORK_SEARCH_PATHS[sdk=iphonesimulator*]": "$(SRCROOT)/../composeApp/build/bin/iosSimulatorArm64/debugFramework"
+        "FRAMEWORK_SEARCH_PATHS[sdk=iphoneos*][config=Debug]": "$(SRCROOT)/../composeApp/build/bin/iosArm64/debugFramework"
+        "FRAMEWORK_SEARCH_PATHS[sdk=iphoneos*][config=Release]": "$(SRCROOT)/../composeApp/build/bin/iosArm64/releaseFramework"
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/Frameworks"
+        # 静态 framework 不需要嵌入，Xcode 在最终链接时解析符号；
+        # 通过 -framework + FRAMEWORK_SEARCH_PATHS 链接，模拟器/真机共用同一份配置。
+        OTHER_LDFLAGS: "$(inherited) -framework ComposeApp"
+
+# xcodebuild 需要共享 scheme，这里显式生成
+schemes:
+  EdgeCOS:
+    build:
+      targets:
+        EdgeCOS: all
+    run:
+      config: Debug
+    archive:
+      config: Release
