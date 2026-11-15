@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 启动页背景（暗黑）：深色底 + 居中圆角 logo，跟随系统 night 模式自动切换 -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/splash_dark_background" />
+    <item>
+        <bitmap
+            android:gravity="center"
+            android:src="@drawable/img_splash_logo_rounded" />
+    </item>
+</layer-list>

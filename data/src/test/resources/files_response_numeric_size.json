@@ -1,0 +1,33 @@
+[
+  {
+    "id": "1001",
+    "filename": "Documents",
+    "basename": "Documents",
+    "lastmod": "2026-10-01T12:00:00.000Z",
+    "size": 1,
+    "type": "directory",
+    "thumbnail": null,
+    "hasThumbnail": false,
+    "activeShare": null
+  },
+  {
+    "id": "1002",
+    "filename": "report.pdf",
+    "basename": "report.pdf",
+    "lastmod": "2026-10-02T08:30:00.000Z",
+    "size": "1048576",
+    "type": "file",
+    "thumbnail": "https://cdn.example.com/thumb/1002.jpg",
+    "hasThumbnail": true,
+    "activeShare": null
+  },
+  {
+    "id": "1003",
+    "filename": "photo.jpg",
+    "basename": "photo.jpg",
+    "lastmod": "2026-10-03T09:15:00.000Z",
+    "size": 2048,
+    "type": "file",
+    "hasThumbnail": false
+  }
+]
